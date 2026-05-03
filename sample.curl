@@ -1,0 +1,18 @@
+curl 'https://u3b6gr4ua3-dsn.algolia.net/1/indexes/store_game_en_ca_price_asc/query?x-algolia-agent=Algolia%20for%20JavaScript%20(4.23.2)%3B%20Browser' \
+  -H 'Accept: */*' \
+  -H 'Accept-Language: en-CA,en-GB;q=0.9,en-US;q=0.8,en;q=0.7' \
+  -H 'Connection: keep-alive' \
+  -H 'DNT: 1' \
+  -H 'Origin: https://www.nintendo.com' \
+  -H 'Referer: https://www.nintendo.com/' \
+  -H 'Sec-Fetch-Dest: empty' \
+  -H 'Sec-Fetch-Mode: cors' \
+  -H 'Sec-Fetch-Site: cross-site' \
+  -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36' \
+  -H 'content-type: application/x-www-form-urlencoded' \
+  -H 'sec-ch-ua: "Google Chrome";v="147", "Not.A/Brand";v="8", "Chromium";v="147"' \
+  -H 'sec-ch-ua-mobile: ?0' \
+  -H 'sec-ch-ua-platform: "macOS"' \
+  -H 'x-algolia-api-key: a29c6927638bfd8cee23993e51e721c9' \
+  -H 'x-algolia-application-id: U3B6GR4UA3' \
+  --data-raw '{"filters":"(topLevelFilters:\"Deals\") AND (priceRange:\"$5 - $9.99\")","hitsPerPage":40,"analytics":true,"facetingAfterDistinct":true,"clickAnalytics":true,"highlightPreTag":"^*^^","highlightPostTag":"^*","attributesToHighlight":["description"],"facets":["*"],"maxValuesPerFacet":100,"page":2}'
