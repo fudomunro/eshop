@@ -9,7 +9,7 @@ There's an example request in `sample.curl` which we will use as our starting po
 No external dependencies required — runs with Python 3 stdlib only.
 
 ```
-python3 eshop_deals.py [OPTIONS]
+uv run uv run python3 eshop_deals.py [OPTIONS]
 ```
 
 ### Options
@@ -29,7 +29,7 @@ Responses are cached in `~/.cache/eshop_deals/` for 1 hour. Subsequent requests 
 Show all deals with at least 80% discount:
 
 ```
-$ python3 eshop_deals.py -d 80
+$ uv run uv run python3 eshop_deals.py -d 80
 Found 10 deals with >= 80.0% discount
 
 Title                                            Publisher        MSRP    Sale   Discount
@@ -44,7 +44,7 @@ Blacksmith Forger                                Weakfish Studio  $6.69   $1.00 
 Filter by price range and discount, limit to 5 results:
 
 ```
-$ python3 eshop_deals.py -p '$10 - $19.99' -d 30 -n 5
+$ uv run python3 eshop_deals.py -p '$10 - $19.99' -d 30 -n 5
 Found 5 deals with >= 30.0% discount
 
 Title                           Publisher          MSRP    Sale    Discount
@@ -59,7 +59,7 @@ CONSCRIPT                       Team17             $29.50  $10.03  66.0%
 Save results to CSV:
 
 ```
-$ python3 eshop_deals.py -d 70 -o deals.csv
+$ uv run python3 eshop_deals.py -d 70 -o deals.csv
 ```
 
 This writes a CSV with columns `title,publisher,msrp,sale_price,discount_pct`:
@@ -78,7 +78,7 @@ The web service tracks all eShop games in a SQLite database with price history o
 ### Setup
 
 ```
-pip install -r requirements.txt
+uv sync
 ```
 
 ### Background Service
@@ -86,7 +86,7 @@ pip install -r requirements.txt
 The background service fetches the full eShop catalog and records price snapshots periodically (every 6 hours). Run it as a background process:
 
 ```
-python3 service.py
+uv run python3 service.py
 ```
 
 On first run, this will fetch all ~3700 games and store them. Subsequent runs update game metadata and only record new price snapshots when prices change.
@@ -98,7 +98,7 @@ The database is stored as `eshop.db` in the current directory. Override with `ES
 Start the Flask development server:
 
 ```
-python3 web.py
+uv run python3 web.py
 ```
 
 Then open `http://localhost:8080` in your browser.

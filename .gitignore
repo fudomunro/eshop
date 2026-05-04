@@ -1,2 +1,3 @@
 eshop.db*
 __pycache__/
+.venv/
