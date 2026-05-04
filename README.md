@@ -4,7 +4,7 @@ In particular, we want filter games based on the percentage discount currently o
 
 There's an example request in `sample.curl` which we will use as our starting point.
 
-## Usage
+## CLI Tool
 
 No external dependencies required — runs with Python 3 stdlib only.
 
@@ -70,3 +70,51 @@ Kartoon Racing: Singleplayer Multiplayer Racing,Weakfish Studio,$10.89,$1.08,90.
 Pandaty,Weakfish Studio,$11.70,$1.17,90.0
 Boxerpunk Stories,Weakfish Studio,$12.85,$1.28,90.0
 ```
+
+## Web Service
+
+The web service tracks all eShop games in a SQLite database with price history over time, and provides a browser interface.
+
+### Setup
+
+```
+pip install -r requirements.txt
+```
+
+### Background Service
+
+The background service fetches the full eShop catalog and records price snapshots periodically (every 6 hours). Run it as a background process:
+
+```
+python3 service.py
+```
+
+On first run, this will fetch all ~3700 games and store them. Subsequent runs update game metadata and only record new price snapshots when prices change.
+
+The database is stored as `eshop.db` in the current directory. Override with `ESHOP_DB_PATH=/path/to/db.db`.
+
+### Web App
+
+Start the Flask development server:
+
+```
+python3 web.py
+```
+
+Then open `http://localhost:8080` in your browser.
+
+- `/` — top 20 deals by discount percentage
+- `/deals` — all deals with a minimum discount filter
+- `/games` — browse and search all games
+- `/games/<id>` — game detail with price history chart
+
+### Project Structure
+
+| File | Purpose |
+|------|---------|
+| `eshop_deals.py` | CLI tool for quick deal lookups |
+| `eshop_api.py` | Shared Algolia API client |
+| `db.py` | SQLite schema, upsert and query functions |
+| `service.py` | Background price collection service |
+| `web.py` | Flask web application |
+| `templates/` | HTML templates |
