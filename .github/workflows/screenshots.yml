@@ -4,7 +4,7 @@ on:
   pull_request:
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
 
 jobs:
@@ -12,6 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
 
       - uses: actions/setup-python@v5
         with:
@@ -25,28 +27,29 @@ jobs:
       - name: Run screenshot tests
         run: pytest tests/test_screenshots.py -v
 
-      - name: Upload screenshots
-        uses: actions/upload-artifact@v4
-        with:
-          name: ui-screenshots
-          path: screenshots/
+      - name: Commit screenshots
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add screenshots/
+          git diff --cached --quiet || git commit -m "Update UI screenshots"
+          git push
 
-      - name: Post screenshots to PR
+      - name: Post screenshot to PR
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          gh pr comment "${{ github.event.number }}" \
+          PR_NUMBER=$(gh pr view --json number -q '.number')
+          RAW_URL="${{ github.server_url }}/${{ github.repository }}/raw/${{ github.head_ref }}/screenshots/index.png"
+          gh pr comment "$PR_NUMBER" \
             --repo "${{ github.repository }}" \
             --body "## UI Screenshots
 
-          Screenshots of the web UI with test data:
+          ![Index page](${RAW_URL})
 
           | Page | Screenshot |
           |------|------------|
-          | Index | \`screenshots/index.png\` |
-          | Deals | \`screenshots/deals.png\` |
-          | Games | \`screenshots/games.png\` |
-          | Game Detail | \`screenshots/game_detail.png\` |
-
-          Download all screenshots: [View artifacts](${RUN_URL})"
+          | Index | [index.png](${RAW_URL}) |
+          | Deals | [deals.png](${{ github.server_url }}/${{ github.repository }}/raw/${{ github.head_ref }}/screenshots/deals.png) |
+          | Games | [games.png](${{ github.server_url }}/${{ github.repository }}/raw/${{ github.head_ref }}/screenshots/games.png) |
+          | Game Detail | [game_detail.png](${{ github.server_url }}/${{ github.repository }}/raw/${{ github.head_ref }}/screenshots/game_detail.png) |"
