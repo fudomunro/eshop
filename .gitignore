@@ -1,5 +1,4 @@
 eshop.db*
 __pycache__/
 .venv/
-screenshots/
 *.egg-info/
