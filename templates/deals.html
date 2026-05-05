@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Deals - eShop Deals{% endblock %}
+{% block content %}
+<h1>Deals</h1>
+<div class="filter-bar">
+    <label for="min-discount">Minimum discount:</label>
+    <select id="min-discount" onchange="window.location='/deals?min='+this.value">
+        <option value="0" {{ 'selected' if min_discount == 0 }}>All deals</option>
+        <option value="10" {{ 'selected' if min_discount == 10 }}>10%+</option>
+        <option value="20" {{ 'selected' if min_discount == 20 }}>20%+</option>
+        <option value="30" {{ 'selected' if min_discount == 30 }}>30%+</option>
+        <option value="50" {{ 'selected' if min_discount == 50 }}>50%+</option>
+        <option value="70" {{ 'selected' if min_discount == 70 }}>70%+</option>
+        <option value="90" {{ 'selected' if min_discount == 90 }}>90%+</option>
+    </select>
+    <span style="color:#666;font-size:0.9rem">{{ deals|length }} deals found</span>
+</div>
+<div class="grid">
+    {% for deal in deals %}
+    <a href="/games/{{ deal.id }}" class="card" style="text-decoration:none;color:inherit">
+        <img src="{{ deal.image_url }}" alt="{{ deal.title }}" loading="lazy">
+        <div class="card-body">
+            <h3>{{ deal.title }}</h3>
+            <div class="meta">{{ deal.publisher }}</div>
+            <div class="price">
+                <span class="sale">${{ "%.2f"|format(deal.sale_price) }}</span>
+                <span class="reg">${{ "%.2f"|format(deal.reg_price) }}</span>
+                <span class="badge">-{{ deal.discount_pct }}%</span>
+            </div>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% endblock %}

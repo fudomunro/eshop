@@ -1,0 +1,14 @@
+[project]
+name = "eshop"
+version = "0.1.0"
+description = "Nintendo eShop deals tracker and price history"
+requires-python = ">=3.9"
+dependencies = [
+    "flask>=3.0,<4.0",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7.0",
+    "playwright>=1.40",
+]

@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}{{ game.title }} - eShop Deals{% endblock %}
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+{% block content %}
+<div class="detail-header">
+    <img src="{{ game.image_url }}" alt="{{ game.title }}">
+    <div class="detail-info">
+        <h1>{{ game.title }}</h1>
+        <div class="meta">
+            {% if game.publisher %}{{ game.publisher }}{% endif %}
+            {% if game.developer and game.developer != game.publisher %} &middot; {{ game.developer }}{% endif %}
+            {% if game.release_date %} &middot; {{ game.release_date[:10] }}{% endif %}
+        </div>
+        {% if genres %}
+        <div style="margin-bottom:0.5rem">
+            {% for genre in genres %}
+            <span style="display:inline-block;background:#eee;padding:0.15rem 0.5rem;border-radius:4px;font-size:0.8rem;margin-right:0.25rem">{{ genre }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% for listing in listings %}
+        <p style="margin-top:0.5rem">
+            <a href="https://www.nintendo.com{{ game.url if game.url else listing.url }}" target="_blank" rel="noopener" style="color:#e63946">View on Nintendo eShop</a>
+        </p>
+        {% endfor %}
+        {% if external_links %}
+        <div style="margin-top:0.75rem">
+            {% for link in external_links %}
+            <a href="{{ link.url }}" target="_blank" rel="noopener" style="margin-right:1rem;color:#666">{{ link.site }}</a>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% if game.description %}
+        <div class="description">{{ game.description }}</div>
+        {% endif %}
+    </div>
+</div>
+
+{% if price_history %}
+<div class="price-history">
+    <h2 style="margin-bottom:1rem">Price History</h2>
+    <canvas id="priceChart"></canvas>
+    <script>
+    const history = {{ price_history | tojson }};
+    new Chart(document.getElementById('priceChart'), {
+        type: 'line',
+        data: {
+            labels: history.map(h => h.captured_at),
+            datasets: [
+                { label: 'Regular Price', data: history.map(h => h.reg_price),
+                  borderColor: '#888', backgroundColor: 'rgba(136,136,136,0.1)', fill: false, tension: 0.1 },
+                { label: 'Sale Price', data: history.map(h => h.sale_price),
+                  borderColor: '#e63946', backgroundColor: 'rgba(230,57,70,0.1)', fill: false, tension: 0.1 }
+            ]
+        },
+        options: {
+            scales: { y: { beginAtZero: true, title: { display: true, text: 'Price (CAD)' } } },
+            plugins: { legend: { position: 'top' } }
+        }
+    });
+    </script>
+</div>
+
+<h2 style="margin-top:2rem;margin-bottom:0.5rem">Price Records</h2>
+<table>
+    <thead>
+        <tr><th>Date</th><th>Regular</th><th>Sale</th><th>Discount</th></tr>
+    </thead>
+    <tbody>
+        {% for s in price_history|reverse %}
+        <tr>
+            <td>{{ s.captured_at[:10] }}</td>
+            <td>${{ "%.2f"|format(s.reg_price) }}</td>
+            <td>${{ "%.2f"|format(s.sale_price) }}</td>
+            <td>
+                {% if s.discounted %}
+                <span class="badge">-{{ ((s.reg_price - s.sale_price) / s.reg_price * 100)|round(1) }}%</span>
+                {% else %}&mdash;{% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p style="margin-top:2rem;color:#666">No price history available yet. Run the background service to start collecting data.</p>
+{% endif %}
+{% endblock %}

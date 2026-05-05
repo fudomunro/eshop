@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}All Games - eShop Deals{% endblock %}
+{% block content %}
+<h1>All Games</h1>
+<form class="search-bar" action="/games" method="get">
+    <input type="text" name="q" placeholder="Search by title, developer, or publisher..." value="{{ query }}">
+</form>
+<div class="grid">
+    {% for game in games %}
+    <a href="/games/{{ game.id }}" class="card" style="text-decoration:none;color:inherit">
+        <img src="{{ game.image_url }}" alt="{{ game.title }}" loading="lazy">
+        <div class="card-body">
+            <h3>{{ game.title }}</h3>
+            <div class="meta">{{ game.publisher or game.developer }}</div>
+            {% if game.is_deal %}
+            <span class="badge" style="margin-top:0.25rem">On Sale</span>
+            {% endif %}
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% if total_pages > 1 %}
+<div class="pagination">
+    {% if page > 1 %}
+    <a href="/games?q={{ query }}&page={{ page - 1 }}">Prev</a>
+    {% endif %}
+    {% for p in range(1, total_pages + 1) %}
+        {% if p == page %}
+        <span class="current">{{ p }}</span>
+        {% elif p <= 3 or p > total_pages - 3 or (p >= page - 2 and p <= page + 2) %}
+        <a href="/games?q={{ query }}&page={{ p }}">{{ p }}</a>
+        {% elif p == 4 or p == total_pages - 3 %}
+        <span>...</span>
+        {% endif %}
+    {% endfor %}
+    {% if page < total_pages %}
+    <a href="/games?q={{ query }}&page={{ page + 1 }}">Next</a>
+    {% endif %}
+</div>
+{% endif %}
+<p style="margin-top:1rem;color:#666;font-size:0.9rem">{{ total }} games total</p>
+{% endblock %}
