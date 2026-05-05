@@ -1,0 +1,52 @@
+name: UI Screenshots
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  screenshots:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install -e ".[test]"
+          playwright install chromium --with-deps
+
+      - name: Run screenshot tests
+        run: pytest tests/test_screenshots.py -v
+
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-screenshots
+          path: screenshots/
+
+      - name: Post screenshots to PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          gh pr comment "${{ github.event.number }}" \
+            --repo "${{ github.repository }}" \
+            --body "## UI Screenshots
+
+          Screenshots of the web UI with test data:
+
+          | Page | Screenshot |
+          |------|------------|
+          | Index | \`screenshots/index.png\` |
+          | Deals | \`screenshots/deals.png\` |
+          | Games | \`screenshots/games.png\` |
+          | Game Detail | \`screenshots/game_detail.png\` |
+
+          Download all screenshots: [View artifacts](${RUN_URL})"
