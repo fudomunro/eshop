@@ -12,6 +12,12 @@
             {% if game.publisher %}{{ game.publisher }}{% endif %}
             {% if game.developer and game.developer != game.publisher %} &middot; {{ game.developer }}{% endif %}
             {% if game.release_date %} &middot; {{ game.release_date[:10] }}{% endif %}
+            {% if game.metacritic_score %}
+            &middot;
+            {% if game.metacritic_url %}<a href="{{ game.metacritic_url }}" target="_blank" rel="noopener" style="text-decoration:none">{% endif %}
+            <span class="mc-badge {{ 'mc-high' if game.metacritic_score >= 75 else 'mc-mid' if game.metacritic_score >= 50 else 'mc-low' }}">Metacritic: {{ game.metacritic_score }}</span>
+            {% if game.metacritic_url %}</a>{% endif %}
+            {% endif %}
         </div>
         {% if genres %}
         <div style="margin-bottom:0.5rem">

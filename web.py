@@ -32,9 +32,13 @@ def index():
 @app.route("/deals")
 def deals():
     min_discount = request.args.get("min", 0, type=float)
+    min_mc = request.args.get("min_mc", None, type=int)
+    scored_only = request.args.get("scored", "", type=str) == "1"
     with get_db(current_app.config["DB_PATH"]) as conn:
-        results = get_current_deals(conn, min_discount=min_discount)
-    return render_template("deals.html", deals=results, min_discount=min_discount)
+        results = get_current_deals(conn, min_discount=min_discount,
+                                    min_mc=min_mc, scored_only=scored_only)
+    return render_template("deals.html", deals=results, min_discount=min_discount,
+                           min_mc=min_mc, scored_only=scored_only)
 
 
 @app.route("/games")

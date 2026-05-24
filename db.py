@@ -19,6 +19,10 @@ CREATE TABLE IF NOT EXISTS games (
     release_date TEXT DEFAULT '',
     description TEXT DEFAULT '',
     image_url TEXT DEFAULT '',
+    metacritic_score INTEGER,
+    metacritic_url TEXT DEFAULT '',
+    rawg_id INTEGER,
+    review_synced_at TEXT,
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))
 );
@@ -52,6 +56,15 @@ CREATE TABLE IF NOT EXISTS external_links (
     UNIQUE(game_id, site)
 );
 
+CREATE TABLE IF NOT EXISTS review_overrides (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    game_id INTEGER NOT NULL REFERENCES games(id) ON DELETE CASCADE,
+    rawg_id INTEGER NOT NULL,
+    rawg_name TEXT DEFAULT '',
+    created_at TEXT DEFAULT (datetime('now')),
+    UNIQUE(game_id)
+);
+
 CREATE INDEX IF NOT EXISTS idx_games_canonical_key ON games(canonical_key);
 CREATE INDEX IF NOT EXISTS idx_games_title ON games(title);
 CREATE INDEX IF NOT EXISTS idx_eshop_listings_game_id ON eshop_listings(game_id);
@@ -59,6 +72,13 @@ CREATE INDEX IF NOT EXISTS idx_eshop_listings_nsuid ON eshop_listings(nsuid);
 CREATE INDEX IF NOT EXISTS idx_price_snapshots_listing_id ON price_snapshots(listing_id);
 CREATE INDEX IF NOT EXISTS idx_price_snapshots_captured_at ON price_snapshots(captured_at);
 """
+
+MIGRATION_COLUMNS = [
+    ("games", "metacritic_score", "INTEGER"),
+    ("games", "metacritic_url", "TEXT DEFAULT ''"),
+    ("games", "rawg_id", "INTEGER"),
+    ("games", "review_synced_at", "TEXT"),
+]
 
 
 def make_canonical_key(title, developer="", publisher=""):
@@ -91,6 +111,17 @@ def get_db(path=DB_PATH):
 def init_db(path=DB_PATH):
     with get_db(path) as conn:
         conn.executescript(SCHEMA_SQL)
+        _run_migrations(conn)
+
+
+def _run_migrations(conn):
+    """Add columns that were introduced after the initial schema."""
+    for table, column, col_type in MIGRATION_COLUMNS:
+        existing = conn.execute(f"PRAGMA table_info({table})").fetchall()
+        col_names = {row["name"] for row in existing}
+        if column not in col_names:
+            conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {col_type}")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_games_rawg_id ON games(rawg_id)")
 
 
 def upsert_game(conn, game):
@@ -155,9 +186,10 @@ def maybe_insert_price(conn, listing_id, game):
     return True
 
 
-def get_current_deals(conn, min_discount=0):
-    return conn.execute("""
+def get_current_deals(conn, min_discount=0, min_mc=None, scored_only=False):
+    query = """
         SELECT g.id, g.title, g.developer, g.publisher, g.genres, g.image_url,
+               g.metacritic_score, g.metacritic_url,
                el.url, el.nsuid,
                ps.reg_price, ps.sale_price,
                ROUND((ps.reg_price - ps.sale_price) / ps.reg_price * 100, 1) as discount_pct
@@ -168,8 +200,15 @@ def get_current_deals(conn, min_discount=0):
           AND ps.captured_at = (SELECT MAX(ps2.captured_at) FROM price_snapshots ps2
                                 WHERE ps2.listing_id = el.id)
           AND ((ps.reg_price - ps.sale_price) / ps.reg_price * 100) >= ?
-        ORDER BY discount_pct DESC
-    """, (min_discount,)).fetchall()
+    """
+    params = [min_discount]
+    if scored_only:
+        query += " AND g.metacritic_score IS NOT NULL"
+    elif min_mc is not None:
+        query += " AND g.metacritic_score >= ?"
+        params.append(min_mc)
+    query += " ORDER BY discount_pct DESC"
+    return conn.execute(query, params).fetchall()
 
 
 def search_games(conn, query, page=1, per_page=24):
@@ -213,3 +252,58 @@ def get_game_detail(conn, game_id):
         "SELECT * FROM external_links WHERE game_id = ?", (game_id,)
     ).fetchall()
     return {"game": game, "listings": listings, "price_history": history, "external_links": external}
+
+
+def update_game_review(conn, game_id, rawg_id, metacritic_score, metacritic_url, rawg_name=""):
+    """Store review data for a game after a successful RAWG match."""
+    conn.execute("""
+        UPDATE games SET rawg_id=?, metacritic_score=?, metacritic_url=?,
+            review_synced_at=datetime('now')
+        WHERE id=?
+    """, (rawg_id, metacritic_score, metacritic_url, game_id))
+    return rawg_name
+
+
+def get_games_needing_review_sync(conn, max_age_days=7, by_price=False):
+    """Return games that have never been synced or whose sync is stale."""
+    base = """
+        SELECT g.id, g.title, g.developer, g.publisher
+        FROM games g
+        LEFT JOIN review_overrides ro ON ro.game_id = g.id
+    """
+    where = """
+        WHERE g.review_synced_at IS NULL
+           OR g.review_synced_at < datetime('now', ?)
+    """
+    params = [f"-{max_age_days} days"]
+    if by_price:
+        return conn.execute(base + """
+            LEFT JOIN eshop_listings el ON el.game_id = g.id
+            LEFT JOIN price_snapshots ps ON ps.listing_id = el.id
+                AND ps.captured_at = (SELECT MAX(captured_at) FROM price_snapshots ps2
+                                      WHERE ps2.listing_id = el.id)
+        """ + where + """
+            ORDER BY COALESCE(ps.reg_price, 0) DESC, g.review_synced_at ASC NULLS FIRST
+        """, params).fetchall()
+    return conn.execute(base + where + """
+        ORDER BY g.review_synced_at ASC NULLS FIRST
+    """, params).fetchall()
+
+
+def set_review_override(conn, game_id, rawg_id, rawg_name=""):
+    """Record a manual override for RAWG matching."""
+    conn.execute("""
+        INSERT OR REPLACE INTO review_overrides (game_id, rawg_id, rawg_name)
+        VALUES (?, ?, ?)
+    """, (game_id, rawg_id, rawg_name))
+    # Clear sync timestamp so the override is picked up on next sync
+    conn.execute("UPDATE games SET review_synced_at=NULL WHERE id=?", (game_id,))
+
+
+def get_review_overrides(conn):
+    """Return all manual overrides."""
+    return conn.execute("""
+        SELECT ro.*, g.title as game_title
+        FROM review_overrides ro
+        JOIN games g ON g.id = ro.game_id
+    """).fetchall()
