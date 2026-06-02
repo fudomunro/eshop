@@ -1,0 +1,11 @@
+.venv/
+.git/
+.jj/
+.pytest_cache/
+__pycache__/
+*.egg-info/
+screenshots/
+tests/
+eshop.db
+*.pyc
+.DS_Store

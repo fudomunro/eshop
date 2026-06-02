@@ -6,3 +6,12 @@ services:
     volumes:
       - ./eshop.db:/data/eshop.db
     restart: unless-stopped
+
+  review-sync:
+    build: .
+    entrypoint: ["sh", "/app/sync-entrypoint.sh"]
+    volumes:
+      - ./eshop.db:/data/eshop.db
+    env_file:
+      - .env
+    restart: unless-stopped
