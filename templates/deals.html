@@ -21,7 +21,15 @@
         <option value="75" {{ 'selected' if min_mc == 75 }}>75+</option>
         <option value="50" {{ 'selected' if min_mc == 50 }}>50+</option>
     </select>
-    <span style="color:#666;font-size:0.9rem">{{ deals|length }} deals found</span>
+    <span style="color:#999;font-size:0.9rem">{{ deals|length }} deals found</span>
+    <div class="view-toggle">
+        <button id="btn-tiles" class="view-btn active" onclick="setView('tiles')" title="Tile view">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
+        </button>
+        <button id="btn-list" class="view-btn" onclick="setView('list')" title="List view">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="14" height="3" rx="1"/><rect x="1" y="6.5" width="14" height="3" rx="1"/><rect x="1" y="12" width="14" height="3" rx="1"/></svg>
+        </button>
+    </div>
 </div>
 <script>
 function applyFilters() {
@@ -35,8 +43,27 @@ function applyFilters() {
     }
     window.location = url;
 }
+function setView(view) {
+    const container = document.getElementById('deals-container');
+    const btnTiles = document.getElementById('btn-tiles');
+    const btnList = document.getElementById('btn-list');
+    if (view === 'list') {
+        container.classList.add('list-view');
+        btnList.classList.add('active');
+        btnTiles.classList.remove('active');
+    } else {
+        container.classList.remove('list-view');
+        btnTiles.classList.add('active');
+        btnList.classList.remove('active');
+    }
+    localStorage.setItem('deals-view', view);
+}
+document.addEventListener('DOMContentLoaded', function() {
+    const saved = localStorage.getItem('deals-view');
+    if (saved === 'list') setView('list');
+});
 </script>
-<div class="grid">
+<div id="deals-container" class="grid">
     {% for deal in deals %}
     <a href="/games/{{ deal.id }}" class="card" style="text-decoration:none;color:inherit">
         <img src="{{ deal.image_url }}" alt="{{ deal.title }}" loading="lazy">
