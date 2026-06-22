@@ -1,7 +1,31 @@
 {% extends "base.html" %}
 {% block title %}eShop Deals{% endblock %}
 {% block content %}
-<h1>Top Deals</h1>
+{% if top_rated %}
+<h1>Top Rated Deals</h1>
+<p style="color:#999;margin-bottom:1rem;font-size:0.9rem">High-scoring games currently on sale, sorted by Metacritic score</p>
+<div class="grid">
+    {% for deal in top_rated %}
+    <a href="/games/{{ deal.id }}" class="card" style="text-decoration:none;color:inherit">
+        <img src="{{ deal.image_url }}" alt="{{ deal.title }}" loading="lazy">
+        <div class="card-body">
+            <h3>{{ deal.title }}</h3>
+            <div class="meta">{{ deal.publisher }}</div>
+            <div class="price">
+                <span class="sale">${{ "%.2f"|format(deal.sale_price) }}</span>
+                <span class="reg">${{ "%.2f"|format(deal.reg_price) }}</span>
+                <span class="badge">-{{ deal.discount_pct }}%</span>
+                {% if deal.metacritic_score %}
+                <span class="mc-badge {{ 'mc-high' if deal.metacritic_score >= 75 else 'mc-mid' if deal.metacritic_score >= 50 else 'mc-low' }}">{{ deal.metacritic_score }}</span>
+                {% endif %}
+            </div>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% endif %}
+
+<h1 style="margin-top:2rem">Top Deals</h1>
 <div class="grid">
     {% for deal in deals %}
     <a href="/games/{{ deal.id }}" class="card" style="text-decoration:none;color:inherit">
@@ -13,6 +37,9 @@
                 <span class="sale">${{ "%.2f"|format(deal.sale_price) }}</span>
                 <span class="reg">${{ "%.2f"|format(deal.reg_price) }}</span>
                 <span class="badge">-{{ deal.discount_pct }}%</span>
+                {% if deal.metacritic_score %}
+                <span class="mc-badge {{ 'mc-high' if deal.metacritic_score >= 75 else 'mc-mid' if deal.metacritic_score >= 50 else 'mc-low' }}">{{ deal.metacritic_score }}</span>
+                {% endif %}
             </div>
         </div>
     </a>

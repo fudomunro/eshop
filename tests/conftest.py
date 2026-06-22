@@ -115,6 +115,20 @@ def seed_db(path):
             listing_id = upsert_listing(conn, game_id, game_data)
             maybe_insert_price(conn, listing_id, game_data)
 
+        # Add Metacritic scores for test games
+        conn.execute(
+            "UPDATE games SET metacritic_score=96, metacritic_url='https://www.metacritic.com/game/switch/the-legend-of-zelda-tears-of-the-kingdom' WHERE canonical_key LIKE ?",
+            ("%zeldatearsofthekingdom%",)
+        )
+        conn.execute(
+            "UPDATE games SET metacritic_score=97, metacritic_url='https://www.metacritic.com/game/switch/super-mario-odyssey' WHERE canonical_key LIKE ?",
+            ("%supermarioodyssey%",)
+        )
+        conn.execute(
+            "UPDATE games SET metacritic_score=85, metacritic_url='https://www.metacritic.com/game/switch/metroid-dread' WHERE canonical_key LIKE ?",
+            ("%metroiddread%",)
+        )
+
         # Add price history snapshots for dealt games
         history = [
             ("zelda-totk", [

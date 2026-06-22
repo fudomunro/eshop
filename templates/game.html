@@ -12,23 +12,29 @@
             {% if game.publisher %}{{ game.publisher }}{% endif %}
             {% if game.developer and game.developer != game.publisher %} &middot; {{ game.developer }}{% endif %}
             {% if game.release_date %} &middot; {{ game.release_date[:10] }}{% endif %}
+            {% if game.metacritic_score %}
+            &middot;
+            {% if game.metacritic_url %}<a href="{{ game.metacritic_url }}" target="_blank" rel="noopener" style="text-decoration:none">{% endif %}
+            <span class="mc-badge {{ 'mc-high' if game.metacritic_score >= 75 else 'mc-mid' if game.metacritic_score >= 50 else 'mc-low' }}">Metacritic: {{ game.metacritic_score }}</span>
+            {% if game.metacritic_url %}</a>{% endif %}
+            {% endif %}
         </div>
         {% if genres %}
         <div style="margin-bottom:0.5rem">
             {% for genre in genres %}
-            <span style="display:inline-block;background:#eee;padding:0.15rem 0.5rem;border-radius:4px;font-size:0.8rem;margin-right:0.25rem">{{ genre }}</span>
+            <span style="display:inline-block;background:#333;padding:0.15rem 0.5rem;border-radius:4px;font-size:0.8rem;margin-right:0.25rem">{{ genre }}</span>
             {% endfor %}
         </div>
         {% endif %}
         {% for listing in listings %}
         <p style="margin-top:0.5rem">
-            <a href="https://www.nintendo.com{{ game.url if game.url else listing.url }}" target="_blank" rel="noopener" style="color:#e63946">View on Nintendo eShop</a>
+            <a href="https://www.nintendo.com{{ game.url if game.url else listing.url }}" target="_blank" rel="noopener" style="color:#ff6b6b">View on Nintendo eShop</a>
         </p>
         {% endfor %}
         {% if external_links %}
         <div style="margin-top:0.75rem">
             {% for link in external_links %}
-            <a href="{{ link.url }}" target="_blank" rel="noopener" style="margin-right:1rem;color:#666">{{ link.site }}</a>
+            <a href="{{ link.url }}" target="_blank" rel="noopener" style="margin-right:1rem;color:#999">{{ link.site }}</a>
             {% endfor %}
         </div>
         {% endif %}
@@ -56,8 +62,11 @@
             ]
         },
         options: {
-            scales: { y: { beginAtZero: true, title: { display: true, text: 'Price (CAD)' } } },
-            plugins: { legend: { position: 'top' } }
+            scales: {
+                y: { beginAtZero: true, title: { display: true, text: 'Price (CAD)', color: '#999' }, ticks: { color: '#999' }, grid: { color: '#333' } },
+                x: { ticks: { color: '#999' }, grid: { color: '#333' } }
+            },
+            plugins: { legend: { position: 'top', labels: { color: '#e0e0e0' } } }
         }
     });
     </script>
@@ -84,6 +93,6 @@
     </tbody>
 </table>
 {% else %}
-<p style="margin-top:2rem;color:#666">No price history available yet. Run the background service to start collecting data.</p>
+<p style="margin-top:2rem;color:#999">No price history available yet. Run the background service to start collecting data.</p>
 {% endif %}
 {% endblock %}
