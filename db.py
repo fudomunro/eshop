@@ -186,7 +186,7 @@ def maybe_insert_price(conn, listing_id, game):
     return True
 
 
-def get_current_deals(conn, min_discount=0, min_mc=None, scored_only=False):
+def get_current_deals(conn, min_discount=0, min_mc=None, scored_only=False, sort="discount"):
     query = """
         SELECT g.id, g.title, g.developer, g.publisher, g.genres, g.image_url,
                g.metacritic_score, g.metacritic_url,
@@ -207,8 +207,31 @@ def get_current_deals(conn, min_discount=0, min_mc=None, scored_only=False):
     elif min_mc is not None:
         query += " AND g.metacritic_score >= ?"
         params.append(min_mc)
-    query += " ORDER BY discount_pct DESC"
+    if sort == "score":
+        query += " ORDER BY COALESCE(g.metacritic_score, 0) DESC, discount_pct DESC"
+    else:
+        query += " ORDER BY discount_pct DESC"
     return conn.execute(query, params).fetchall()
+
+
+def get_top_rated_deals(conn, min_mc=75, limit=10):
+    """Return discounted games with high Metacritic scores, sorted by score."""
+    return conn.execute("""
+        SELECT g.id, g.title, g.developer, g.publisher, g.genres, g.image_url,
+               g.metacritic_score, g.metacritic_url,
+               el.url, el.nsuid,
+               ps.reg_price, ps.sale_price,
+               ROUND((ps.reg_price - ps.sale_price) / ps.reg_price * 100, 1) as discount_pct
+        FROM games g
+        JOIN eshop_listings el ON el.game_id = g.id
+        JOIN price_snapshots ps ON ps.listing_id = el.id
+        WHERE ps.discounted = 1
+          AND ps.captured_at = (SELECT MAX(ps2.captured_at) FROM price_snapshots ps2
+                                WHERE ps2.listing_id = el.id)
+          AND g.metacritic_score >= ?
+        ORDER BY g.metacritic_score DESC, discount_pct DESC
+        LIMIT ?
+    """, (min_mc, limit)).fetchall()
 
 
 def search_games(conn, query, page=1, per_page=24):

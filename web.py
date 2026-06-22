@@ -5,7 +5,7 @@ import json
 import os
 
 from flask import Flask, current_app, render_template, request
-from db import get_db, get_current_deals, search_games, get_game_detail
+from db import get_db, get_current_deals, get_top_rated_deals, search_games, get_game_detail
 
 app = Flask(__name__)
 app.config["DB_PATH"] = os.environ.get("ESHOP_DB_PATH", "eshop.db")
@@ -26,7 +26,8 @@ def row_to_dict(row):
 def index():
     with get_db(current_app.config["DB_PATH"]) as conn:
         deals = get_current_deals(conn, min_discount=10)
-    return render_template("index.html", deals=deals[:20])
+        top_rated = get_top_rated_deals(conn, min_mc=75, limit=10)
+    return render_template("index.html", deals=deals[:20], top_rated=top_rated)
 
 
 @app.route("/deals")
@@ -34,11 +35,15 @@ def deals():
     min_discount = request.args.get("min", 0, type=float)
     min_mc = request.args.get("min_mc", None, type=int)
     scored_only = request.args.get("scored", "", type=str) == "1"
+    sort = request.args.get("sort", "discount", type=str)
+    if sort not in ("discount", "score"):
+        sort = "discount"
     with get_db(current_app.config["DB_PATH"]) as conn:
         results = get_current_deals(conn, min_discount=min_discount,
-                                    min_mc=min_mc, scored_only=scored_only)
+                                    min_mc=min_mc, scored_only=scored_only,
+                                    sort=sort)
     return render_template("deals.html", deals=results, min_discount=min_discount,
-                           min_mc=min_mc, scored_only=scored_only)
+                           min_mc=min_mc, scored_only=scored_only, sort=sort)
 
 
 @app.route("/games")

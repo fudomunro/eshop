@@ -21,6 +21,11 @@
         <option value="75" {{ 'selected' if min_mc == 75 }}>75+</option>
         <option value="50" {{ 'selected' if min_mc == 50 }}>50+</option>
     </select>
+    <label for="sort">Sort by:</label>
+    <select id="sort" onchange="applyFilters()">
+        <option value="discount" {{ 'selected' if sort == 'discount' }}>Biggest discount</option>
+        <option value="score" {{ 'selected' if sort == 'score' }}>Highest rated</option>
+    </select>
     <span style="color:#999;font-size:0.9rem">{{ deals|length }} deals found</span>
     <div class="view-toggle">
         <button id="btn-tiles" class="view-btn active" onclick="setView('tiles')" title="Tile view">
@@ -35,7 +40,8 @@
 function applyFilters() {
     const min = document.getElementById('min-discount').value;
     const minMc = document.getElementById('min-mc').value;
-    let url = '/deals?min=' + min;
+    const sort = document.getElementById('sort').value;
+    let url = '/deals?min=' + min + '&sort=' + sort;
     if (minMc === 'scored') {
         url += '&scored=1';
     } else if (minMc) {
